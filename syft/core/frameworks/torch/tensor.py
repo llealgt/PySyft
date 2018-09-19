@@ -798,11 +798,11 @@ class _FixedPrecisionTensor(_SyftTensor):
         super().__init__(child=child, parent=parent, torch_type=torch_type, owner=owner)
 
 
-class _MPCTensor(_SyftTensor):
+class _SPDZTensor(_SyftTensor):
     """
     This tensor wraps a GeneralizedPointerTensor containing shares and knows how to
     manipulate those shares properly so that the resulting methods are themselves
-    also MPCTensors.
+    also SPDZTensors.
 
     This tensor is a special case tensor in multiple ways. First and foremost,
     it is the first tensor we have implemented whose .child object is a Torch
@@ -813,7 +813,7 @@ class _MPCTensor(_SyftTensor):
 
     def __init__(self, shares=None, child=None, torch_type='syft.LongTensor', *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Fixme: remove the share on init, declaring a MPCTensor should autmatically create a _GeneralizedPointerTensor
+        # Fixme: remove the share on init, declaring a SPDZTensor should autmatically create a _GeneralizedPointerTensor
 
         if(shares is not None):
             if isinstance(shares, sy._GeneralizedPointerTensor):
@@ -829,7 +829,7 @@ class _MPCTensor(_SyftTensor):
             self.child = child
             self.shares = self.child
         else:
-            print("cannot initialize MPCTensor with shares and child both == None")
+            print("cannot initialize SPDZTensor with shares and child both == None")
         self.torch_type = torch_type
 
     # The table of command you want to replace
@@ -847,7 +847,7 @@ class _MPCTensor(_SyftTensor):
         @staticmethod
         def get(attr):
             attr = attr.split('.')[-1]
-            return getattr(sy._MPCTensor.overload_functions, attr)
+            return getattr(sy._SPDZTensorr.overload_functions, attr)
 
     # Put here all the methods you want to overload
 
@@ -862,26 +862,26 @@ class _MPCTensor(_SyftTensor):
 
     def sum(self, *args, **kwargs):
         result_child = self.child.sum(*args, **kwargs) % spdz.field
-        response = _MPCTensor(result_child).wrap(True)
+        response = _SPDZTensor(result_child).wrap(True)
         return response
 
     def cumsum(self, *args, **kwargs):
 
         result_child = self.child.cumsum(*args, **kwargs) % spdz.field
-        response = _MPCTensor(result_child).wrap(True)
+        response = _SPDZTensor(result_child).wrap(True)
         return response
 
     def __mul__(self, other):
         workers = list(self.shares.child.pointer_tensor_dict.keys())
         gp_response = spdz.spdz_mul(self.shares, other.shares, workers)
-        response = _MPCTensor(gp_response).wrap(True)
+        response = _SPDZTensor(gp_response).wrap(True)
         return response
 
     def mm(self, other):
 
         workers = list(self.shares.child.pointer_tensor_dict.keys())
         gp_response = spdz.spdz_matmul(self.shares, other.shares, workers)
-        response = _MPCTensor(gp_response).wrap(True)
+        response = _SPDZTensor(gp_response).wrap(True)
         return response
 
     @classmethod
@@ -911,7 +911,7 @@ class _MPCTensor(_SyftTensor):
             return cls.mm(self, *args, **kwargs)
         else:
             result_child = getattr(self.child, attr)(*args, **kwargs)
-            return _MPCTensor(result_child).wrap(True)
+            return _SPDZTensor(result_child).wrap(True)
 
 
     def send(self, workers):
@@ -947,7 +947,7 @@ class _TorchObject(object):
         x_bob.send(bob)
         x_pointer_tensor_dict = {alice: x_alice.child, bob: x_bob.child}
         x_gp = _GeneralizedPointerTensor(x_pointer_tensor_dict).on(self)
-        x_mpc = _MPCTensor(x_gp).on(x_gp)
+        x_mpc = _SPDZTensor(x_gp).on(x_gp)
         return x_mpc
 
     def set_id(self, new_id):
@@ -1043,7 +1043,7 @@ class _TorchTensor(_TorchObject):
         x_bob.send(bob)
         x_pointer_tensor_dict = {alice: x_alice.child, bob: x_bob.child}
         x_gp = _GeneralizedPointerTensor(x_pointer_tensor_dict, torch_type='syft.LongTensor').on(self)
-        x_mpc = _MPCTensor(x_gp, torch_type='syft.LongTensor').wrap(True)
+        x_mpc = _SPDZTensor(x_gp, torch_type='syft.LongTensor').wrap(True)
         return x_mpc
 
     def ser(self, private, as_dict=True):

@@ -27,6 +27,6 @@ class MPCTorch(object):
             res = torch.add(x.shares[i], y.shares[i])
             result.append(res)
 
-        # z = MPCTensor(result)
+        # z = SPDZTensor(result)
 
         # return z

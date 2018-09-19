@@ -9,7 +9,7 @@ import syft as sy
 from syft.core import utils
 from syft.core.frameworks.torch import utils as torch_utils
 from syft.core.frameworks import encode
-from syft.core.frameworks.torch.tensor import _MPCTensor
+from syft.core.frameworks.torch.tensor import _SPDZTensor
 from syft.core.frameworks.torch.tensor import _GeneralizedPointerTensor
 from syft.mpc import spdz
 import torch
@@ -937,7 +937,7 @@ class TestTorchVariable(TestCase):
         assert (torch.equal(z.get(), sy.Variable(torch.ByteTensor([1, 1, 1]))))
 
 
-class TestMPCTensor(TestCase):
+class TestSPDZTensor(TestCase):
 
     def generate_mpc_number_pair(self, n1, n2):
         x = torch.LongTensor([n1])
@@ -954,8 +954,8 @@ class TestMPCTensor(TestCase):
         y_pointer_tensor_dict = {alice: y_alice.child, bob: y_bob.child}
         x_gp = _GeneralizedPointerTensor(x_pointer_tensor_dict).on(x)
         y_gp = _GeneralizedPointerTensor(y_pointer_tensor_dict).on(y)
-        x_mpc = _MPCTensor(x_gp)
-        y_mpc = _MPCTensor(y_gp)
+        x_mpc = _SPDZTensor(x_gp)
+        y_mpc = _SPDZTensor(y_gp)
         return x_mpc, y_mpc
 
     def mpc_sum(self, n1, n2):
